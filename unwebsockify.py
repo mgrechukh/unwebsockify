@@ -26,11 +26,19 @@ import sys
 import asyncio
 import websockets
 
+from urllib.parse import urlparse
+
 class Proxy:
     def __init__(self, port, addr, url, subproto):
         self.port = port
         self.addr = addr
         self.url = url
+        parsed = urlparse(url)
+        if parsed.password:
+          self.logging_url = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "***", parsed.hostname)).geturl()
+        else:
+          self.logging_url = url
+
         if subproto:
             self.subproto = [ subproto ]
         else:
@@ -52,7 +60,7 @@ class Proxy:
         try:
             async with websockets.connect(
                     self.url, subprotocols=self.subproto) as ws:
-                print(f'{peer} connected to {self.url}')
+                print(f'{peer} connected to {self.logging_url}')
                 def r_reader():
                     return r.read(65536)
                 tcp_to_ws = loop.create_task(self.copy(r_reader, ws.send))
